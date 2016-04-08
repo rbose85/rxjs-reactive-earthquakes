@@ -8,5 +8,8 @@
   },
   "keywords": [],
   "author": "Rajiv Bose <rbose85@users.noreply.github.com>",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "rx": "^4.1.0"
+  }
 }
