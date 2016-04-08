@@ -10,6 +10,7 @@
   "author": "Rajiv Bose <rbose85@users.noreply.github.com>",
   "license": "ISC",
   "dependencies": {
+    "leaflet": "^0.7.7",
     "rx": "^4.1.0"
   }
 }
