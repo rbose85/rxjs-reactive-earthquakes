@@ -10,7 +10,8 @@ const initialise = () => {
               .retry(3)
       )
       .flatMap(result => Rx.Observable.from(result.response.features))
-      .distinct(quake => quake.properties.code);
+      .distinct(quake => quake.properties.code)
+      .share();
 
   quakes.subscribe(quake => {
     const coords = quake.geometry.coordinates;
