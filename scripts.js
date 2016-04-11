@@ -18,6 +18,27 @@ const initialise = () => {
 
     L.circle([coords[1], coords[0]], size).addTo(map);
   });
+
+  const makeRow = props => {
+    const row = document.createElement('tr');
+    row.id = props['net'] + props['code'];
+
+    const date = new Date(props['time']);
+    const time = date.toString();
+
+    [props['place'], props['mag'], time].forEach(text => {
+      const cell = document.createElement('td');
+      cell.textContent = text;
+      row.appendChild(cell);
+    });
+
+    return row;
+  };
+
+  const table = document.getElementById('quakes_info');
+  quakes.pluck('properties')
+      .map(makeRow)
+      .subscribe(row => table.appendChild(row));
 };
 
 Rx.DOM.ready()
