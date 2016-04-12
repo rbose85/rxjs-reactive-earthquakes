@@ -1,6 +1,24 @@
 const map = L.map('map').setView([33.858631, -118.279602], 7);
 L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(map);
 
+const codeLayers = {};
+const quakeLayer = L.layerGroup([]).addTo(map);
+
+const makeRow = props => {
+  const row = document.createElement('tr');
+  const time = (new Date(props['time'])).toString();
+
+  row.id = props['net'] + props['code'];
+
+  [props['place'], props['mag'], time].forEach(text => {
+    const cell = document.createElement('td');
+    cell.textContent = text;
+    row.appendChild(cell);
+  });
+
+  return row;
+};
+
 const initialise = () => {
   const quakes = Rx.Observable.interval(5000)
       .flatMap(() => Rx.DOM.jsonpRequest({
@@ -17,36 +35,39 @@ const initialise = () => {
     const coords = quake.geometry.coordinates;
     const size = quake.properties['mag'] * 10000;
 
-    L.circle([coords[1], coords[0]], size).addTo(map);
+    const circle = L.circle([coords[1], coords[0]], size).addTo(map);
+
+    quakeLayer.addLayer(circle);
+    codeLayers[quake.id] = quakeLayer.getLayerId(circle);
   });
 
-  const makeRow = props => {
-    const row = document.createElement('tr');
-    row.id = props['net'] + props['code'];
-
-    const date = new Date(props['time']);
-    const time = date.toString();
-
-    [props['place'], props['mag'], time].forEach(text => {
-      const cell = document.createElement('td');
-      cell.textContent = text;
-      row.appendChild(cell);
-    });
-
-    return row;
-  };
-
   const table = document.getElementById('quakes_info');
+
+  const getRowFromEvent = event => Rx.Observable.fromEvent(table, event)
+      .filter(event => {
+        const el = event.target;
+        return el.tagName === 'TD' && el.parentNode.id.length;
+      })
+      .pluck('target', 'parentNode')
+      .distinctUntilChanged();
+
+  getRowFromEvent('mouseover').pairwise()
+      .subscribe(rows => {
+        const prevCircle = quakeLayer.getLayer(codeLayers[rows[0].id]);
+        const currCircle = quakeLayer.getLayer(codeLayers[rows[1].id]);
+
+        prevCircle.setStyle({ color: '#0000ff' });
+        currCircle.setStyle({ color: '#ff0000' });
+      });
+
+  getRowFromEvent('click').subscribe(row => {
+    const circle = quakeLayer.getLayer(codeLayers[row.id]);
+    map.panTo(circle.getLatLng());
+  });
+
   quakes.pluck('properties')
       .map(makeRow)
-      .bufferWithTime(500)
-      .filter(rows => rows.length > 0)
-      .map(rows => {
-        const fragment = document.createDocumentFragment();
-        rows.forEach(row => fragment.appendChild(row));
-        return fragment;
-      })
-      .subscribe(fragment => table.appendChild(fragment));
+      .subscribe(row => table.appendChild(row));
 };
 
 Rx.DOM.ready()
